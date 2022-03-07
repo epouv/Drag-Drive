@@ -9,9 +9,10 @@ public class Drag : MonoBehaviour
     CursorMode cursorMode = CursorMode.Auto;
 
     TrailRenderer[] skidRenderer;
+    ParticleSystem[] smokePartArr;
 
     Ray ray;
-    Plane surface;
+    //Plane surface;
     Plane movePlane;
 
     Component[] smokeVfx;
@@ -23,8 +24,10 @@ public class Drag : MonoBehaviour
     public WheelCollider wheelColBL;
 
     public float acceleration = 50000f;
-    public float reverse = -10000f;
-    public float brake = 30000f;
+
+    public float brake = 40000f;
+
+    WheelCollider[] colArr;
 
     Vector3 point;
 
@@ -33,6 +36,9 @@ public class Drag : MonoBehaviour
 
     void Start()
     {
+
+        smokePartArr = GetComponentsInChildren<ParticleSystem>();
+        colArr = GetComponentsInChildren<WheelCollider>();
 
         smokeVfx = GetComponentsInChildren<ParticleSystem>();
         Cursor.visible = true;
@@ -55,39 +61,22 @@ public class Drag : MonoBehaviour
         Cursor.SetCursor(cursorIdle, Vector2.zero, cursorMode);
     }
 
-    void Update()
+    void reverse(WheelCollider[] wC, float decel)
     {
 
-        if(Input.GetMouseButton(1))
+        foreach(WheelCollider wCol in wC)
         {
-    
-            wheelColFL.brakeTorque = brake * (Input.GetMouseButton(1) ? 1 : Input.GetMouseButton(0) ? -1 : 0) * Time.fixedDeltaTime;
-            wheelColFR.brakeTorque = brake * (Input.GetMouseButton(1) ? 1 : Input.GetMouseButton(0) ? -1 : 0) * Time.fixedDeltaTime;
-            wheelColBL.brakeTorque = brake * (Input.GetMouseButton(1) ? 1 : Input.GetMouseButton(0) ? -1 : 0) * Time.fixedDeltaTime;
-            wheelColBR.brakeTorque = brake * (Input.GetMouseButton(1) ? 1 : Input.GetMouseButton(0) ? -1 : 0) * Time.fixedDeltaTime;
-
-        }else if(Input.GetMouseButton(0)){
-
-            wheelColFL.brakeTorque = 0f;
-            wheelColFR.brakeTorque = 0f;
-            wheelColBL.brakeTorque = 0f;
-            wheelColBR.brakeTorque = 0f;
-            isBraking = false;
-
-        }else if(Input.GetKey(KeyCode.Space))
-        {
-
-            wheelColFL.motorTorque = reverse;
-            wheelColFR.motorTorque = reverse;
-            isBraking = false;
-
-        }else{
-
-            wheelColFL.motorTorque = 0;
-            wheelColFR.motorTorque = 0;
-
+            wCol.motorTorque = decel;
         }
-        
+
+    }
+
+    void stopSmoke(ParticleSystem[] sPA)
+    {
+        foreach(ParticleSystem pS in sPA)
+            {
+                pS.Stop(true);
+            }
     }
 
     void UpdateWheel(WheelCollider col, Transform trans){
@@ -131,13 +120,6 @@ public class Drag : MonoBehaviour
                 wheelColFL.steerAngle = currentTurnAngle * Time.fixedDeltaTime;
 
             }
-        
-        if(wheelColFR.brakeTorque != 0)
-        {
-            isBraking = true;
-        }else if (wheelColFR.brakeTorque ==0){
-            isBraking = false;
-        }
 
         if(isBraking)
         {
@@ -162,6 +144,44 @@ public class Drag : MonoBehaviour
                 skid.emitting = false;
             }
 
+        }
+
+    }
+
+    void Update()
+    {
+
+        if(Input.GetMouseButton(1))
+        {
+            
+            isBraking = true;
+            wheelColFL.brakeTorque = brake;
+            wheelColFR.brakeTorque = brake;
+            wheelColBL.brakeTorque = brake;
+            wheelColBR.brakeTorque = brake;
+
+        }else if(Input.GetMouseButtonUp(1)){
+
+            isBraking = false;
+            wheelColFL.brakeTorque = 0f;
+            wheelColFR.brakeTorque = 0f;
+            wheelColBL.brakeTorque = 0f;
+            wheelColBR.brakeTorque = 0f;
+            stopSmoke(smokePartArr);
+            
+
+        }else if(Input.GetKey(KeyCode.Space)){
+
+            reverse(colArr, -1000);
+
+        }else if(Input.GetKeyUp(KeyCode.Space)){
+
+            reverse(colArr, 0);
+        }
+        
+        if(Input.GetMouseButtonUp(0)) {
+            wheelColFL.motorTorque = 0f;
+            wheelColFR.motorTorque = 0f;
         }
 
     }
